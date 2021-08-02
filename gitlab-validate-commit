@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# Reject pushes that contain commits with messages that do not adhere
+# to the defined regex.
+
+# This can be a useful pre-receive hook [1] if you want to ensure every
+# commit is associated with a ticket ID.
+#
+# As an example this hook ensures that the commit message contains a
+# JIRA issue formatted as [JIRA-<issue number>].
+#
+# [1] https://help.github.com/en/enterprise/user/articles/working-with-pre-receive-hooks
+#
+
+
+
+
+# Color variables
+red='\033[1;31m'
+green='\033[1;32m'
+yellow='\033[1;33m'
+blue='\033[1;34m'
+magenta='\033[1;35m'
+cyan='\033[1;36m'
+# Clear the color after that
+clear='\033[0m'
+
+# Examples
+
+#echo -e "The color is: ${red}red${clear}!"
+#echo -e "The color is: ${green}green${clear}!"
+#echo -e "The color is: ${yellow}yellow${clear}!"
+#echo -e "The color is: ${blue}blue${clear}!"
+#echo -e "The color is: ${magenta}magenta${clear}!"
+#echo -e "The color is: ${cyan}cyan${clear}!"
+
+set -e
+
+zero_commit='0000000000000000000000000000000000000000'
+A='LSD-[0-9]'
+B='CT-[0-9]'
+C='PT-[0-9]'
+D='DT-[0-9]'
+E='RIV-[0-9]'
+F='WE-[0-9]'
+G='MOB-[0-9]'
+H='PRR-[0-9]'
+
+
+while read -r oldrev newrev refname; do
+
+	# Branch or tag got deleted, ignore the push
+    [ "$newrev" = "$zero_commit" ] && continue
+
+    # Calculate range for new branch/updated branch
+    [ "$oldrev" = "$zero_commit" ] && range="$newrev" || range="$oldrev..$newrev"
+
+	for commit in $(git rev-list "$range" --not --all); do
+		if  git log --max-count=1 --format=%B $commit | grep -iqE "$A"; then
+			exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$B"; then
+            exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$C"; then
+            exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$D"; then
+            exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$E"; then
+            exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$F"; then
+            exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$G"; then
+            exit 0
+        elif git log --max-count=1 --format=%B $commit | grep -iqE "$H"; then
+            exit 0
+		else 
+			echo "${red}ERROR: Your push was rejected${clear}"
+			echo "${blue}Reason:${clear} JIRA ID is missing in the commit message"
+            echo "${green}Solution:${clear} Change the commit message  Like 'initial commit CT-XXXXX '
+This is for changing the latest Git commit message ${green}'git commit --amend -m 'New message'${clear}
+This is for changing older commit messages ${green}'git rebase -i HEAD~n'${clear}" 
+            echo "Please fix the commit message and push again."
+            echo "If any issues contact the ${yellow} RE team${clear}"
+			exit 1
+        fi
+	done
+
+done
